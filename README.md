@@ -1,121 +1,136 @@
-# Iris Detection with Governance
+# Fine-tuning Gemma 3 1B-IT for Iris Species Classification
 
-This project demonstrates machine learning model development with a focus on explainability and fairness using the classic Iris dataset. The implementation includes model training, SHAP-based explainability analysis, and fairness evaluation using Fairlearn.
+**Week 10 Assignment - MLOps Course**  
+**IITM BS Degree Program**  
+**Student:** Sandip Biswas  
+**Roll No:** 21F1002787
 
 ## Project Overview
 
-The project builds a Decision Tree classifier to predict Iris flower species and implements governance practices including:
-- Model explainability using SHAP (SHapley Additive exPlanations)
-- Fairness evaluation using Fairlearn
-- Model artifacts management
+This project demonstrates the fine-tuning of Google's Gemma 3 1B-IT model for Iris species classification. The implementation converts numerical flower measurements into categorical features (low, medium, high) and trains the model to classify Iris species: setosa, versicolor, and virginica.
 
-## Dataset
+## Week 10 Assignment Expected Outcomes for Evaluation
 
-The project uses the Iris dataset (`data/iris.csv`) which contains:
-- **Features**: sepal_length, sepal_width, petal_length, petal_width
-- **Target**: species (setosa, versicolor, virginica)
-- **Additional attribute**: location (artificially introduced for fairness analysis)
+### 🔍 Schema Validation Checks/Testing on Generated Output
 
-## Project Structure
+The implementation includes comprehensive validation mechanisms:
+
+- **Output Format Validation**: All model predictions are validated against expected species names (setosa, versicolor, virginica)
+- **Prediction Quality Assessment**: 
+  - Validation rate tracking (1.000 for both base and fine-tuned models)
+  - Empty output detection
+  - Invalid prediction identification
+- **Feature Schema Validation**: Input features are categorized using domain-informed boundaries based on KDE analysis
+- **Data Integrity Checks**: Stratified sampling ensures balanced representation across all species
+
+### 📊 Validating Improvements with Evaluation Metrics (Base vs Fine-tuned LLM)
+
+#### Performance Comparison
+
+| Metric | Base Model | Fine-tuned Model | Improvement |
+|--------|------------|------------------|-------------|
+| **Overall Accuracy** | 33.3% | 63.3% | +30.0% |
+| **Setosa Accuracy** | 100% | 90% | -10% |
+| **Versicolor Accuracy** | 0% | 100% | +100% |
+| **Virginica Accuracy** | 0% | 0% | 0% |
+
+#### Detailed Evaluation Results
+
+**Base Model Performance:**
+- Predicted only "setosa" for all test samples
+- Complete failure to distinguish between versicolor and virginica
+- Precision: 0.11 (macro avg), Recall: 0.33 (macro avg), F1-score: 0.17 (macro avg)
+
+**Fine-tuned Model Performance:**
+- Successfully learned to distinguish between setosa and versicolor
+- Improved multi-class classification capability
+- Precision: 0.45 (macro avg), Recall: 0.63 (macro avg), F1-score: 0.52 (macro avg)
+
+#### Confusion Matrix Analysis
+
+**Base Model:**
+```
+[[10  0  0]  <- All setosa correctly classified
+ [10  0  0]  <- All versicolor misclassified as setosa  
+ [10  0  0]] <- All virginica misclassified as setosa
+```
+
+**Fine-tuned Model:**
+```
+[[ 9  1  0]  <- 90% setosa accuracy
+ [ 0 10  0]  <- 100% versicolor accuracy
+ [ 2  8  0]] <- 0% virginica accuracy (confused with versicolor)
+```
+
+## Dataset and Methodology
+
+### Dataset Specifications
+- **Total Samples**: 150 (50 per species)
+- **Training Set**: 90 samples (30 per species)
+- **Test Set**: 30 samples (10 per species)
+- **Evaluation Set**: 30 samples (10 per species)
+
+### Feature Engineering
+- Converted numerical measurements to categorical representations
+- Domain-informed boundaries based on KDE analysis:
+  - **Sepal Length**: Low (4.3-5.4), Medium (5.4-6.3), High (6.3-7.9)
+  - **Sepal Width**: Low (2.0-2.7), Medium (2.7-3.3), High (3.3-4.4)
+  - **Petal Length**: Low (1.0-2.1), Medium (3.0-5.0), High (5.0-7.0)
+  - **Petal Width**: Low (0.1-0.6), Medium (1.0-1.6), High (1.6-2.5)
+
+### Model Architecture and Training
+- **Base Model**: Gemma 3 1B-IT
+- **Fine-tuning Method**: LoRA (Low-Rank Adaptation)
+- **Training Configuration**:
+  - LoRA rank: 64, alpha: 32, dropout: 0.05
+  - Learning rate: 2e-4
+  - Epochs: 4
+  - Batch size: 1 (with gradient accumulation: 8)
+
+## Technical Implementation
+
+### Key Technologies
+- **Framework**: Transformers 4.50.0, PyTorch 2.6.0+cu124
+- **Optimization**: BitsAndBytesConfig for memory efficiency
+- **Training**: SFTTrainer with parameter-efficient fine-tuning
+- **Evaluation**: Comprehensive metrics using scikit-learn
+
+### Hardware Requirements
+- CUDA-compatible GPU (used for model training)
+- Sufficient memory for Gemma 3 1B model loading
+
+## Results Summary
+
+The fine-tuning process successfully improved the model's classification capabilities:
+
+1. **Significant Overall Improvement**: 30% increase in accuracy
+2. **Enhanced Multi-class Learning**: Base model could only predict one class, fine-tuned model distinguishes multiple classes
+3. **Validation Framework**: 100% prediction validation rate ensures output quality
+4. **Species-specific Performance**: Perfect versicolor classification, good setosa performance, challenges with virginica classification
+
+## Files Structure
 
 ```
-week9/
+MLOps-week9/
+├── fine-tune-gemma3-1b-it-iris-sandip.ipynb  # Main notebook
 ├── data/
-│   └── iris.csv                    # Iris dataset
-├── artifacts/
-│   └── model.joblib               # Trained model artifacts
-├── Iris detection with governance.ipynb  # Main notebook
-└── README.md                      # This file
+│   ├── iris.csv                               # Original dataset
+│   └── iris_train.jsonl                       # Training data in JSONL format
+├── README.md                                  # This file
+└── .gitignore                                # Git ignore file
 ```
 
-## Key Components
+## Future Improvements
 
-### 1. Model Training
-- **Algorithm**: Decision Tree Classifier
-- **Parameters**: max_depth=4, random_state=1
-- **Performance**: 95.0% accuracy on test set
-- **Train-Test Split**: 60/40 ratio with stratified sampling
+1. **Enhanced Training Data**: Increase training samples for virginica classification
+2. **Advanced Feature Engineering**: Explore additional categorical boundaries
+3. **Model Architecture**: Experiment with different LoRA configurations
+4. **Evaluation Metrics**: Implement additional validation frameworks
 
-### 2. Model Explainability (SHAP)
-The project implements SHAP analysis to understand model predictions:
-- **SHAP Waterfall Plots**: Show individual prediction explanations
-- **Feature Importance**: Identifies which features contribute most to predictions
-- **SHAP Values**: Quantify each feature's impact on model output
+## Conclusion
 
-Key findings from SHAP analysis:
-- For virginica classification, petal_length and petal_width features have the highest positive contributions
-- SHAP values help understand feature importance for individual predictions
+This project demonstrates successful fine-tuning of a large language model for domain-specific classification tasks. The implementation includes robust validation mechanisms and comprehensive evaluation metrics, showing clear improvements over the base model performance.
 
-### 3. Fairness Analysis (Fairlearn)
-Fairness evaluation is performed using an artificially introduced "location" attribute:
-- **Sensitive Attribute**: location (randomly assigned with 70/30 distribution)
-- **Metrics Evaluated**: accuracy, precision, recall
-- **Fairness Assessment**: Model performance is compared across different location groups
+---
 
-Fairness results:
-- Overall accuracy: 93.3%
-- Location group 0: 90.2% accuracy
-- Location group 1: 100% accuracy
-- Shows potential bias across location groups
-
-## Dependencies
-
-```python
-pandas
-numpy
-scikit-learn
-shap
-fairlearn
-matplotlib
-joblib
-```
-
-## Installation
-
-1. Clone or download the project
-2. Install required dependencies:
-   ```bash
-   pip install pandas numpy scikit-learn shap fairlearn matplotlib joblib
-   ```
-
-## Usage
-
-1. **Run the Jupyter Notebook**: Open `Iris detection with governance.ipynb`
-2. **Execute cells sequentially** to:
-   - Load and explore the data
-   - Train the Decision Tree model
-   - Generate SHAP explanations
-   - Perform fairness analysis
-
-## Key Results
-
-### Model Performance
-- **Accuracy**: 95.0% (without location feature)
-- **Accuracy with location**: 91.7% (slight decrease when location is included)
-
-### Explainability Insights
-- Petal measurements (length and width) are the most important features for virginica classification
-- SHAP values provide quantitative measure of each feature's contribution
-
-### Fairness Assessment
-- Model shows different performance across location groups
-- Demonstrates the importance of fairness evaluation in ML pipelines
-- Highlights potential bias that could occur with geographic or demographic attributes
-
-## Governance Practices Demonstrated
-
-1. **Explainability**: Using SHAP to understand model decisions
-2. **Fairness**: Evaluating model performance across sensitive attributes
-3. **Reproducibility**: Setting random seeds for consistent results
-4. **Artifact Management**: Saving trained models for deployment
-
-## Next Steps
-
-- Implement bias mitigation techniques
-- Add more comprehensive fairness metrics
-- Create automated model monitoring pipeline
-- Implement model versioning and experiment tracking
-
-## License
-
-This project is for educational purposes and demonstrates MLOps governance practices.
+*This project is part of the MLOps course curriculum at IITM BS Degree Program, focusing on practical machine learning operations and model evaluation techniques.*
